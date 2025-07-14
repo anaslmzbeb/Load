@@ -527,6 +527,7 @@ func (this *Admin) Handle() {
 	}
 }
 
+func (this *Admin) ReadLine(masked bool) (string, error) {
     buf := make([]byte, 1024)
     bufPos := 0
 
