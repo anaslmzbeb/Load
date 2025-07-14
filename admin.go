@@ -14,6 +14,10 @@ type Admin struct {
 	conn net.Conn
 }
 
+func (this *Admin) ReadLine(masked bool) (string, error) {
+
+}
+
 func NewAdmin(conn net.Conn) *Admin {
 	return &Admin{conn}
 }
@@ -523,31 +527,28 @@ func (this *Admin) Handle() {
 	}
 }
 
-buf := make([]byte, 1024)
-bufPos := 0
+    buf := make([]byte, 1024)
+    bufPos := 0
 
-for {
-    b := make([]byte, 1)
-    n, err := this.conn.Read(b)
-    if err != nil || n != 1 {
-        return "", err
+    for {
+        b := make([]byte, 1)
+        n, err := this.conn.Read(b)
+        if err != nil || n != 1 {
+            return "", err
+        }
+
+        if b[0] == '\n' || b[0] == '\r' {
+            break
+        }
+
+        if bufPos >= len(buf) {
+            return "", fmt.Errorf("input too long")
+        }
+
+        buf[bufPos] = b[0]
+        bufPos++
     }
 
-    // End of line (user pressed Enter)
-    if b[0] == '\n' || b[0] == '\r' {
-        break
-    }
-
-    // Prevent writing outside the buffer
-    if bufPos >= len(buf) {
-        return "", fmt.Errorf("input too long")
-    }
-
-    buf[bufPos] = b[0]
-    bufPos++
-}
-
-// ✅ No +1 here!
-line := buf[:bufPos]
-return string(line), nil
+    line := buf[:bufPos]
+    return string(line), nil
 }
