@@ -15,7 +15,30 @@ type Admin struct {
 }
 
 func (this *Admin) ReadLine(masked bool) (string, error) {
+    buf := make([]byte, 1024)
+    bufPos := 0
 
+    for {
+        b := make([]byte, 1)
+        n, err := this.conn.Read(b)
+        if err != nil || n != 1 {
+            return "", err
+        }
+
+        if b[0] == '\n' || b[0] == '\r' {
+            break
+        }
+
+        if bufPos >= len(buf) {
+            return "", fmt.Errorf("input too long")
+        }
+
+        buf[bufPos] = b[0]
+        bufPos++
+    }
+
+    line := buf[:bufPos]
+    return string(line), nil
 }
 
 func NewAdmin(conn net.Conn) *Admin {
@@ -91,7 +114,7 @@ func (this *Admin) Handle() {
 	this.conn.Write([]byte("\x1b[38;5;99m            ⠀⠀⠀⠀⠀⠀⠀⠀⠠⢀⠂⠰⡌⡼⠡⣼⢃⡿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢻⣿⣿⣿⣿⣿⣿⣿⣿⣾⡿⠿⣛⣯⡴⢏⠳⠁⠀\r\n"))
 	this.conn.Write([]byte("\x1b[38;5;99m            ⠀⠀⠀⠀⠀⠀⠀⠠⠑⡌⠀⣉⣾⣩⣼⣿⣾⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣀⣠⣤⣤⣿⣿⣿⣿⡿⢛⣛⣯⣭⠶⣞⠻⣉⠒⠀⠂⠀⠀⠀\r\n"))
 	this.conn.Write([]byte("\x1b[38;5;99m            ⠀⠀⠀⠀⠀⢀⣀⡶⢝⣢⣾⣿⣼⣿⣿⣿⣿⣿⣀⣼⣀⣀⣀⣤⣴⣶⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⠿⣿⠿⡛⠏⠍⠂⠁⢠⠁⠀⠀⠀⠀⠀⠀⠀\r\n"))
-	this.conn.Write([]byte("\x1b[38;5;99m            ⠠⢀⢥⣰⣾⣿⣯⣶⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⣽⠟⣿⠐⠨⠑⡀⠈⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\r\n"))
+	this.conn.Write([]byte("\x1b[38;5;99m           ⠠⢀⢥⣰⣾⣿⣯⣶⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⣽⠟⣿⠐⠨⠑⡀⠈⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\r\n"))
 	this.conn.Write([]byte("\x1b[38;5;99m           ⡐⢢⣟⣾⣿⣿⣟⣛⣿⣿⣿⣿⢿⣝⠻⠿⢿⣯⣛⢿⣿⣿⣿⡛⠻⠿⣛⠻⠛⡛⠩⢁⣴⡾⢃⣾⠇⢀⠡⠂⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\r\n"))
 	this.conn.Write([]byte("\x1b[38;5;99m           ⠈⠁⠊⠙⠉⠩⠌⠉⠢⠉⠐⠈⠂⠈⠁⠉⠂⠐⠉⣻⣷⣭⠛⠿⣶⣦⣤⣤⣤⣴⡾⠟⣫⣾⣿⡏⠀⠂⠐⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\r\n"))
 	this.conn.Write([]byte("\x1b[38;5;99m           ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙⢻⢿⢶⣤⣬⣉⣉⣭⣤⣴⣿⣿⡿⠃⠄⡈⠁⠈⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\r\n"))
@@ -523,36 +546,5 @@ func (this *Admin) Handle() {
 				}
 			}
 		}
-
 	}
-}
-
-buf := make([]byte, 1024)
-bufPos := 0
-
-for {
-    b := make([]byte, 1)
-    n, err := this.conn.Read(b)
-    if err != nil || n != 1 {
-        // handle error here or return
-        // e.g.:
-        return "", err
-    }
-
-    if b[0] == '\n' || b[0] == '\r' {
-        break
-    }
-
-    if bufPos >= len(buf) {
-        // handle input too long error here or return
-        // e.g.:
-        return "", fmt.Errorf("input too long")
-    }
-
-    buf[bufPos] = b[0]
-    bufPos++
-}
-
-line := buf[:bufPos]
-return string(line), nil
 }
