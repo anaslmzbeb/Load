@@ -523,49 +523,31 @@ func (this *Admin) Handle() {
 	}
 }
 
-func (this *Admin) ReadLine(masked bool) (string, error) {
-	buf := make([]byte, 1024)
-	bufPos := 0
+buf := make([]byte, 1024)
+bufPos := 0
 
-	for {
-		n, err := this.conn.Read(buf[bufPos : bufPos+1])
-		if err != nil || n != 1 {
-			return "", err
-		}
-		if buf[bufPos] == '\xFF' {
-			n, err := this.conn.Read(buf[bufPos : bufPos+2])
-			if err != nil || n != 2 {
-				return "", err
-			}
-			bufPos--
-		} else if buf[bufPos] == '\x7F' || buf[bufPos] == '\x08' {
-			if bufPos > 0 {
-				this.conn.Write([]byte(string(buf[bufPos])))
-				bufPos--
-			}
-			bufPos--
-		} else if buf[bufPos] == '\r' || buf[bufPos] == '\t' || buf[bufPos] == '\x09' {
-			bufPos--
-		} else if buf[bufPos] == '\n' || buf[bufPos] == '\x00' {
-			this.conn.Write([]byte("\r\n"))
-			return string(buf[:bufPos]), nil
-		} else if buf[bufPos] == 0x03 {
-			this.conn.Write([]byte("^C\r\n"))
-			return "", nil
-		} else {
-			if buf[bufPos] == '\x1B' {
-				buf[bufPos] = '^'
-				this.conn.Write([]byte(string(buf[bufPos])))
-				bufPos++
-				buf[bufPos] = '['
-				this.conn.Write([]byte(string(buf[bufPos])))
-			} else if masked {
-				this.conn.Write([]byte("*"))
-			} else {
-				this.conn.Write([]byte(string(buf[bufPos])))
-			}
-		}
-		bufPos++
-	}
-	return string(buf), nil
+for {
+    b := make([]byte, 1)
+    n, err := this.conn.Read(b)
+    if err != nil || n != 1 {
+        return "", err
+    }
+
+    // End of line (user pressed Enter)
+    if b[0] == '\n' || b[0] == '\r' {
+        break
+    }
+
+    // Prevent writing outside the buffer
+    if bufPos >= len(buf) {
+        return "", fmt.Errorf("input too long")
+    }
+
+    buf[bufPos] = b[0]
+    bufPos++
+}
+
+// ✅ No +1 here!
+line := buf[:bufPos]
+return string(line), nil
 }
